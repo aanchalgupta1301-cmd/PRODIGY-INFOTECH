@@ -1,0 +1,57 @@
+!pip install -q aitextgen
+
+import logging
+logging.basicConfig(
+        format="%(asctime)s — %(levelname)s — %(name)s — %(message)s",
+        datefmt="%m/%d/%Y %H:%M:%S",
+        level=logging.INFO
+    )
+
+from aitextgen import aitextgen
+from aitextgen.colab import mount_gdrive, copy_file_from_gdrive
+#GPU
+ai = aitextgen(tf_gpt2="124M", to_gpu=True)
+
+# Comment out the above line and uncomment the below line to use GPT Neo instead.
+# ai = aitextgen(model="EleutherAI/gpt-neo-125M", to_gpu=True)
+#Finetune GPT-2
+ai.train(file_name,
+         line_by_line=False,
+         from_cache=False,
+         num_steps=3000,
+         generate_every=1000,
+         save_every=1000,
+         save_gdrive=False,
+         learning_rate=1e-3,
+         fp16=False,
+         batch_size=1, 
+         )
+#Load a Trained Model
+from_folder = None
+
+for file in ["pytorch_model.bin", "config.json"]:
+  if from_folder:
+    copy_file_from_gdrive(file, from_folder)
+  else:
+    copy_file_from_gdrive(file)
+ai = aitextgen(model_folder=".", to_gpu=True)
+#Generate Text From The Trained Model
+ai = aitextgen(model_folder="trained_model", to_gpu=True)
+
+ai.generate()
+ai.generate(n=5,
+            batch_size=5,
+            prompt="ROMEO:",
+            max_length=256,
+            temperature=1.0,
+            top_p=0.9)
+
+num_files = 5
+
+for _ in range(num_files):
+  ai.generate_to_file(n=1000,
+                     batch_size=50,
+                     prompt="ROMEO:",
+                     max_length=256,
+                     temperature=1.0,
+                     top_p=0.9)
